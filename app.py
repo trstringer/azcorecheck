@@ -19,7 +19,7 @@ def azure_creds():
 def parse_args():
     """Parse the cli arguments"""
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(prog='azcorecheck')
     parser.add_argument(
         '-l', '--location',
         required=True,

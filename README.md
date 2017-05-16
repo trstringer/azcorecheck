@@ -4,7 +4,21 @@ This cli tests whether or not there are enough cores available in a region (this
 
 ## Setup
 
-*Add setup here*
+CentOS requires the following dependencies installed...
+
+```
+$ sudo yum install -y git epel-release gcc libffi-devel python-devel openssl-devel
+$ sudo yum install -y python-pip
+```
+
+Install the azcorecheck tool...
+
+```
+$ git clone https://github.com/tstringer/azure-regional-core-checker.git
+$ cd azure-regional-core-checker
+$ chmod 755 ./install
+$ sudo ./install
+```
 
 ## Environment variables
 
@@ -20,7 +34,7 @@ This cli expects the following environment variables to be defined...
 ## Usage
 
 ```
-usage: app.py [-h] -l LOCATION -d DESIRED_CORE_COUNT [-p]
+usage: azcorecheck [-h] -l LOCATION -d DESIRED_CORE_COUNT [-p]
 
 optional arguments:
   -h, --help            show this help message and exit
