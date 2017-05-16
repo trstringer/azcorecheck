@@ -45,7 +45,7 @@ def parse_args():
     )
     return parser.parse_args()
 
-def has_enough_cores(azure_credentials, location, desired_core_count=1):
+def has_enough_cores(azure_credentials, location, desired_core_count=1, verbose=False):
     """Test if a region has enough cores"""
 
     client = ComputeManagementClient(
@@ -62,12 +62,13 @@ def has_enough_cores(azure_credentials, location, desired_core_count=1):
         if 'Total Regional Cores' in _.name.localized_value
     ][0]
 
-    print(
-        str(total_regional_cores.name.localized_value) + ' ' +
-        str(total_regional_cores.current_value) + ' of ' +
-        str(total_regional_cores.limit)
-    )
-    print('Requesting ' + str(desired_core_count) + ' core(s)')
+    if verbose:
+        print(
+            str(total_regional_cores.name.localized_value) + ' ' +
+            str(total_regional_cores.current_value) + ' of ' +
+            str(total_regional_cores.limit)
+        )
+        print('Requesting ' + str(desired_core_count) + ' core(s)')
 
     return desired_core_count <= total_regional_cores.limit - total_regional_cores.current_value
 
@@ -83,8 +84,8 @@ def main():
             tenant=os.environ['ARM_TENANT_ID'],
             subscription_id=os.environ['ARM_SUBSCRIPTION_ID']
         )
-        enough_cores = has_enough_cores(creds, cli_args.location, cli_args.desired)
-        print(enough_cores)
+        enough_cores = has_enough_cores(creds, cli_args.location, cli_args.desired, verbose=True)
+        print('Desired core count is available' if enough_cores else 'Desired core count is unavailable')
     except KeyError as key_err:
         print('KeyError ' + key_err.message)
         sys.exit(0 if cli_args.permissive else 1)
