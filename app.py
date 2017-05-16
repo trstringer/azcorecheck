@@ -4,6 +4,7 @@ import os
 import sys
 from azure.mgmt.compute import ComputeManagementClient
 from azure.common.credentials import ServicePrincipalCredentials
+from azure.common.exceptions import CloudError
 
 def azure_creds():
     """Return a dictionary of azure credentials"""
@@ -43,16 +44,23 @@ def main():
 
     cli_args = parse_args()
 
-    creds_raw = azure_creds()
-    creds = ServicePrincipalCredentials(
-        client_id=creds_raw['client_id'],
-        secret=creds_raw['secret'],
-        tenant=creds_raw['tenant']
-    )
-    client = ComputeManagementClient(
-        credentials=creds,
-        subscription_id=creds_raw['subscription_id']
-    )
+    try:
+        creds_raw = azure_creds()
+        creds = ServicePrincipalCredentials(
+            client_id=creds_raw['client_id'],
+            secret=creds_raw['secret'],
+            tenant=creds_raw['tenant']
+        )
+        client = ComputeManagementClient(
+            credentials=creds,
+            subscription_id=creds_raw['subscription_id']
+        )
+    except KeyError:
+        print('Error while reading environment variable')
+        sys.exit(0 if cli_args.permissive else 1)
+    except CloudError:
+        print('Unable to connect to the Azure subscription')
+        sys.exit(0 if cli_args.permissive else 1)
 
     try:
         total_regional_cores = [
