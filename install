@@ -1,0 +1,16 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(realpath $(dirname "$0"))
+
+sed 's|TEMPDIR|'$SCRIPT_DIR'|g' $SCRIPT_DIR/azcorecheck > /usr/local/bin/azcorecheck
+chmod 755 /usr/local/bin/azcorecheck
+
+cd $SCRIPT_DIR
+
+# install virtualenv if it does not exist
+type virtualenv 2&>1 /dev/null || pip2 install virtualenv
+
+python2 -m virtualenv venv
+. venv/bin/activate
+pip install -r requirements.txt
+deactivate
