@@ -1,10 +1,16 @@
 """Compare current used cores in region to requested cores"""
 import argparse
+from collections import namedtuple
 import os
 import sys
 from azure.mgmt.compute import ComputeManagementClient
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.common.exceptions import CloudError
+
+AzureCredential = namedtuple(
+    'AzureCredential',
+    ['client_id', 'secret', 'tenant', 'subscription_id']
+)
 
 def azure_creds():
     """Return a dictionary of azure credentials"""
@@ -39,48 +45,55 @@ def parse_args():
     )
     return parser.parse_args()
 
-def main():
-    """Main script execution"""
+def has_enough_cores(azure_credentials, location, desired_core_count=1):
+    """Test if a region has enough cores"""
 
-    cli_args = parse_args()
+    client = ComputeManagementClient(
+        credentials=ServicePrincipalCredentials(
+            client_id=azure_credentials.client_id,
+            secret=azure_credentials.secret,
+            tenant=azure_credentials.tenant
+        ),
+        subscription_id=azure_credentials.subscription_id
+    )
 
-    try:
-        creds_raw = azure_creds()
-        creds = ServicePrincipalCredentials(
-            client_id=creds_raw['client_id'],
-            secret=creds_raw['secret'],
-            tenant=creds_raw['tenant']
-        )
-        client = ComputeManagementClient(
-            credentials=creds,
-            subscription_id=creds_raw['subscription_id']
-        )
-    except KeyError:
-        print('Error while reading environment variable')
-        sys.exit(0 if cli_args.permissive else 1)
-    except CloudError:
-        print('Unable to connect to the Azure subscription')
-        sys.exit(0 if cli_args.permissive else 1)
-
-    try:
-        total_regional_cores = [
-            _ for _ in client.usage.list('eastus')
-            if 'Total Regional Cores' in _.name.localized_value
-        ][0]
-    except IndexError:
-        print('unable to retrieve total regional cores')
-        sys.exit(0 if cli_args.permissive else 1)
+    total_regional_cores = [
+        _ for _ in client.usage.list(location)
+        if 'Total Regional Cores' in _.name.localized_value
+    ][0]
 
     print(
         str(total_regional_cores.name.localized_value) + ' ' +
         str(total_regional_cores.current_value) + ' of ' +
         str(total_regional_cores.limit)
     )
+    print('Requesting ' + str(desired_core_count) + ' core(s)')
 
-    print('Desiring ' + str(cli_args.desired) + ' cores')
-    # pylint: disable=line-too-long
-    enough_cores = cli_args.desired + total_regional_cores.current_value <= total_regional_cores.limit
-    print('Provisioning will succeed :: ' + str(enough_cores))
+    return desired_core_count <= total_regional_cores.limit - total_regional_cores.current_value
+
+def main():
+    """Main script execution"""
+
+    cli_args = parse_args()
+
+    try:
+        creds = AzureCredential(
+            client_id=os.environ['ARM_CLIENT_ID'],
+            secret=os.environ['ARM_CLIENT_SECRET'],
+            tenant=os.environ['ARM_TENANT_ID'],
+            subscription_id=os.environ['ARM_SUBSCRIPTION_ID']
+        )
+        enough_cores = has_enough_cores(creds, cli_args.location, cli_args.desired)
+        print(enough_cores)
+    except KeyError as key_err:
+        print('KeyError ' + key_err.message)
+        sys.exit(0 if cli_args.permissive else 1)
+    except IndexError as idx_err:
+        print('IndexError ' + idx_err.message)
+        sys.exit(0 if cli_args.permissive else 1)
+    except CloudError:
+        print('Unable to connect to the Azure subscription')
+        sys.exit(0 if cli_args.permissive else 1)
 
     sys.exit(0 if enough_cores else 1)
 
