@@ -1,26 +1,9 @@
 """Compare current used cores in region to requested cores"""
 import argparse
-from collections import namedtuple
 import os
 import sys
-from azure.mgmt.compute import ComputeManagementClient
-from azure.common.credentials import ServicePrincipalCredentials
-from azure.common.exceptions import CloudError
-
-AzureCredential = namedtuple(
-    'AzureCredential',
-    ['client_id', 'secret', 'tenant', 'subscription_id']
-)
-
-def azure_creds():
-    """Return a dictionary of azure credentials"""
-
-    return {
-        'subscription_id': os.environ['ARM_SUBSCRIPTION_ID'],
-        'tenant': os.environ['ARM_TENANT_ID'],
-        'client_id': os.environ['ARM_CLIENT_ID'],
-        'secret': os.environ['ARM_CLIENT_SECRET']
-    }
+from azurecredentials import AzureCredential
+from corecheck import has_enough_cores
 
 def parse_args():
     """Parse the cli arguments"""
@@ -45,32 +28,6 @@ def parse_args():
     )
     return parser.parse_args()
 
-def has_enough_cores(azure_credentials, location, desired_core_count=1, verbose=False):
-    """Test if a region has enough cores"""
-
-    client = ComputeManagementClient(
-        credentials=ServicePrincipalCredentials(
-            client_id=azure_credentials.client_id,
-            secret=azure_credentials.secret,
-            tenant=azure_credentials.tenant
-        ),
-        subscription_id=azure_credentials.subscription_id
-    )
-
-    total_regional_cores = [
-        _ for _ in client.usage.list(location)
-        if 'Total Regional Cores' in _.name.localized_value
-    ][0]
-
-    if verbose:
-        print(
-            str(total_regional_cores.name.localized_value) + ' ' +
-            str(total_regional_cores.current_value) + ' of ' +
-            str(total_regional_cores.limit)
-        )
-        print('Requesting ' + str(desired_core_count) + ' core(s)')
-
-    return desired_core_count <= total_regional_cores.limit - total_regional_cores.current_value
 
 def main():
     """Main script execution"""

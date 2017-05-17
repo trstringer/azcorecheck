@@ -2,7 +2,7 @@
 
 SCRIPT_DIR=$(realpath $(dirname "$0"))
 
-sed 's|TEMPDIR|'$SCRIPT_DIR'|g' $SCRIPT_DIR/azcorecheck > /usr/local/bin/azcorecheck
+sed 's|TEMPDIR|'$SCRIPT_DIR'|g' $SCRIPT_DIR/bin > /usr/local/bin/azcorecheck
 chmod 755 /usr/local/bin/azcorecheck
 
 cd $SCRIPT_DIR
