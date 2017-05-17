@@ -1,5 +1,9 @@
 #!/bin/bash
 
+type realpath || { realpath() {
+        [[ $1 = /*  ]] && echo "$1" || echo "$PWD/${1#./}"
+} }
+
 SCRIPT_DIR=$(realpath $(dirname "$0"))
 
 sed 's|TEMPDIR|'$SCRIPT_DIR'|g' $SCRIPT_DIR/bin > /usr/local/bin/azcorecheck
@@ -8,7 +12,7 @@ chmod 755 /usr/local/bin/azcorecheck
 cd $SCRIPT_DIR
 
 # install virtualenv if it does not exist
-type virtualenv 2&>1 /dev/null || pip2 install virtualenv
+type virtualenv || pip2 install virtualenv
 
 python2 -m virtualenv venv
 . venv/bin/activate
