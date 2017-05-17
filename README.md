@@ -14,7 +14,7 @@ $ sudo yum install -y python-pip
 Install the azcorecheck tool...
 
 ```
-$ git clone https://github.com/tstringer/azure-regional-core-checker.git
+$ git clone https://github.com/tstringer/azcorecheck.git
 $ cd azure-regional-core-checker
 $ chmod 755 ./install
 $ sudo ./install
